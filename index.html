@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rental Income Tax Helper (Based on IR264)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+        }
+        label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+            transition: background-color 0.2s ease-in-out;
+        }
+        label:hover {
+            background-color: #e5e7eb; /* gray-200 */
+        }
+        input[type="radio"]:checked + span,
+        input[type="checkbox"]:checked + span {
+             font-weight: 600; /* font-semibold */
+        }
+        label, button {
+            padding: 0.75rem; /* p-3 */
+            margin: 0.5rem 0; /* m-2 vertical */
+        }
+        .container {
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1rem; /* Add padding for smaller screens */
+        }
+        @media (min-width: 640px) { /* sm breakpoint */
+            .container {
+                padding: 2rem;
+            }
+        }
+        /* Hide elements smoothly */
+        .hidden {
+             display: none;
+        }
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <h1 class="text-2xl md:text-3xl font-bold mb-6 text-center text-blue-700">Rental Income Tax Helper</h1>
+        <p class="mb-6 text-center text-gray-600">Answer the questions below based on your rental property situation. This tool provides a general summary based on the IR264 guide (July 2024 version). It is not tax advice.</p>
+
+        <form id="rentalForm" class="space-y-6 bg-white p-6 rounded-lg shadow-md">
+
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <h2 class="text-lg font-semibold mb-3 text-blue-600">1. Rental Situation</h2>
+                <p class="mb-2 text-sm text-gray-600">Which best describes your rental situation?</p>
+                <div class="space-y-2">
+                    <label>
+                        <input type="radio" name="rentalSituation" value="owner_residential_long" class="mr-2" required>
+                        <span>Owner renting out Residential Property (Long-term rental)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="rentalSituation" value="owner_holiday_short" class="mr-2">
+                        <span>Owner renting out Holiday Home / Short-Stay Accommodation (e.g., Airbnb)</span>
+                    </label>
+                     <label>
+                        <input type="radio" name="rentalSituation" value="owner_main_home_room" class="mr-2">
+                        <span>Owner renting Room/Flatmate space in your Main Home</span>
+                    </label>
+                     <label>
+                        <input type="radio" name="rentalSituation" value="subletting" class="mr-2">
+                        <span>Subletting a property you rent from someone else</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="rentalSituation" value="other" class="mr-2">
+                        <span>Other (e.g., Owner renting Farmland, Commercial - Note: Different rules apply)</span>
+                    </label>
+                </div>
+                 <div id="holidayHomeQuestions" class="mt-4 space-y-3 hidden pl-4 border-l-2 border-blue-200">
+                    <p class="text-sm font-medium text-gray-700">For your Holiday Home/Short-Stay:</p>
+                    <label class="text-sm">
+                        <input type="checkbox" id="holiday_mixed_use" name="holiday_mixed_use" class="mr-2">
+                        <span>Is it used for both private use and income-earning, AND unused for 62 days or more per year? (Mixed-Use Asset Rules may apply)</span>
+                    </label>
+                    <label class="text-sm">
+                        <input type="checkbox" id="short_stay_gst" name="short_stay_gst" class="mr-2">
+                        <span>Is your total income from ALL taxable activities (including this short-stay rental) likely to be over $60,000 in a 12-month period? (GST registration may be required)</span>
+                    </label>
+                </div>
+                 <div id="mainHomeRoomQuestions" class="mt-4 space-y-3 hidden pl-4 border-l-2 border-blue-200">
+                    <p class="text-sm font-medium text-gray-700">For the Room/Flatmate in your Main Home:</p>
+                    <label class="text-sm">
+                        <input type="checkbox" id="provides_boarding_services" name="provides_boarding_services" class="mr-2">
+                        <span>Do you provide services like meals (i.e., are they a boarder, not just a flatmate)?</span>
+                    </label>
+                     <p id="boarding_note" class="text-xs text-gray-500 mt-1 hidden">Note: Income from boarders has specific rules. Standard costs might apply if providing services, simplifying expense claims. Check IRD guidance for current rates and rules for boarder income.</p>
+                 </div>
+            </div>
+
+            <div id="ownershipRelatedSection" class="space-y-6">
+                <div class="p-4 border border-gray-200 rounded-lg">
+                    <h2 class="text-lg font-semibold mb-3 text-blue-600">2. Loan & Ownership (If Applicable)</h2>
+                    <p id="acquisition_note" class="text-sm text-gray-500 mb-3 hidden">Note: Loans and ownership primarily relate to property owners.</p>
+
+                    <p class="mb-2 text-sm text-gray-600">Do you (as the owner) have a loan (mortgage) specifically for this rental property?</p>
+                     <div class="space-y-2 mb-4">
+                         <label>
+                            <input type="radio" name="hasLoan" value="yes" class="mr-2">
+                            <span>Yes</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="hasLoan" value="no" class="mr-2">
+                            <span>No / Not Applicable</span>
+                        </label>
+                    </div>
+
+                    <div id="interestQuestions" class="mt-4 space-y-3 hidden pl-4 border-l-2 border-blue-200">
+                        <p class="text-sm font-medium text-gray-700">Regarding the owner's loan interest:</p>
+                         <label class="text-sm">
+                            <input type="checkbox" id="interest_new_build" name="interest_new_build" class="mr-2">
+                            <span>Is the property a 'New Build'? (Generally, CCC issued on or after 27 March 2020 - Allows 100% interest claim)</span>
+                        </label>
+                         <label class="text-sm">
+                            <input type="checkbox" id="interest_social_housing" name="interest_social_housing" class="mr-2">
+                            <span>Is the property used exclusively for Emergency, Transitional, Social, or certain Council Housing (leased to specific providers - Allows 100% interest claim)?</span>
+                        </label>
+                         <label class="text-sm">
+                            <input type="checkbox" id="interest_other_exempt" name="interest_other_exempt" class="mr-2">
+                            <span>Does another specific interest limitation exclusion apply (e.g., land business, certain development, build-to-rent - Allows 100% interest claim)?</span>
+                        </label>
+                         <p class="text-xs text-gray-500 mt-2">Note: If no exemption applies, interest deductibility for owners is 80% for the 2024-25 tax year (ending 31 Mar 2025) and 100% from 1 April 2025 onwards. This applies regardless of when the property was acquired.</p>
+                    </div>
+
+                    <p class="mt-4 mb-2 text-sm text-gray-600">How is the property owned (if applicable)?</p>
+                    <div class="space-y-2 mb-4">
+                        <label><input type="radio" name="ownership" value="sole" class="mr-2"><span>Solely by you</span></label>
+                        <label><input type="radio" name="ownership" value="joint" class="mr-2"><span>Jointly with others (not formal partnership)</span></label>
+                        <label><input type="radio" name="ownership" value="partnership" class="mr-2"><span>Legal Partnership (requires IR7)</span></label>
+                        <label><input type="radio" name="ownership" value="trust" class="mr-2"><span>Trust</span></label>
+                        <label><input type="radio" name="ownership" value="company" class="mr-2"><span>Company (LTC or ordinary)</span></label>
+                        <label><input type="radio" name="ownership" value="not_applicable" class="mr-2"><span>Not Applicable / Don't Own</span></label>
+                     </div>
+                </div>
+            </div>
+
+             <div class="p-4 border border-gray-200 rounded-lg">
+                <h2 class="text-lg font-semibold mb-3 text-blue-600">3. Expenses & Deductions</h2>
+                <p class="mb-2 text-sm text-gray-600">Which expenses do you incur related to this rental activity?</p>
+                <div class="space-y-2 mb-4">
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="rent_paid" class="mr-2"><span>Rent Paid (if subletting)</span></label>
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="rates_insurance" class="mr-2"><span>Rates and Insurance (if owner)</span></label>
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="agent_fees" class="mr-2"><span>Agent Fees / Commission (finding tenants/sub-tenants)</span></label>
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="repairs_maintenance" class="mr-2"><span>Repairs and Maintenance (owner responsibility, or subletter if agreed)</span></label>
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="utilities" class="mr-2"><span>Utilities (e.g., power, internet - if you pay and recover or part of service)</span></label>
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="travel" class="mr-2"><span>Travel Costs (for inspections/maintenance - requires records/logbook)</span></label>
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="legal_accounting" class="mr-2"><span>Legal Fees (specific types) / Accounting Fees</span></label>
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="healthy_homes" class="mr-2"><span>Costs to meet Healthy Homes standards (owner responsibility - deductibility depends)</span></label>
+                    <label class="text-sm"><input type="checkbox" name="expenses" value="food_services" class="mr-2"><span>Food or other services provided (if boarding)</span></label>
+                </div>
+
+                 <p class="mb-2 text-sm text-gray-600">Do you (as owner) want to claim depreciation on chattels (furniture, appliances etc.)?</p>
+                 <div class="space-y-2 mb-4">
+                     <label>
+                        <input type="radio" name="claimDepreciation" value="yes" class="mr-2">
+                        <span>Yes (Requires asset register, calculations)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="claimDepreciation" value="no" class="mr-2">
+                        <span>No (Consider electing not to depreciate)</span>
+                    </label>
+                     <label>
+                        <input type="radio" name="claimDepreciation" value="not_applicable" class="mr-2">
+                        <span>Not Applicable (e.g., subletting)</span>
+                    </label>
+                </div>
+
+                <p class="mb-2 text-sm text-gray-600">Do your total deductible expenses for the year likely exceed your total rental income from this activity?</p>
+                 <div class="space-y-2">
+                     <label>
+                        <input type="radio" name="rentalLoss" value="yes" class="mr-2" required>
+                        <span>Yes (A rental loss)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="rentalLoss" value="no" class="mr-2">
+                        <span>No (Rental profit or break-even)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="text-center pt-4">
+                <button type="button" id="generateSummaryBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300 ease-in-out shadow-md">
+                    Generate Summary
+                </button>
+            </div>
+        </form>
+
+        <div id="summaryResult" class="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg shadow hidden">
+            <h2 class="text-xl font-semibold mb-4 text-blue-700">Summary of Key Actions & Considerations (Based on IR264)</h2>
+            <div id="summaryContent" class="space-y-3 text-gray-700">
+                </div>
+            <p class="mt-6 text-sm text-gray-500 italic">
+                <strong>Disclaimer:</strong> This summary is a general guide based on your inputs and the IR264 document (July 2024). Tax rules can be complex and change. This is not professional tax advice. Always refer to the full IRD documentation or consult a qualified tax agent for your specific situation.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // --- Helper Functions ---
+        function getValue(name) {
+            const element = document.querySelector(`input[name="${name}"]:checked`);
+            return element ? element.value : null;
+        }
+
+        function isChecked(id) {
+            const element = document.getElementById(id);
+            return element ? element.checked : false;
+        }
+
+        function getCheckedValues(name) {
+            const elements = document.querySelectorAll(`input[name="${name}"]:checked`);
+            return Array.from(elements).map(el => el.value);
+        }
+
+        function showHideElement(elementId, show) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.classList.toggle('hidden', !show);
+            }
+        }
+
+        // --- Event Listeners for Conditional Questions ---
+        const rentalSituationRadios = document.querySelectorAll('input[name="rentalSituation"]');
+        const hasLoanRadios = document.querySelectorAll('input[name="hasLoan"]');
+        const providesBoardingCheckbox = document.getElementById('provides_boarding_services');
+
+        rentalSituationRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const situation = this.value;
+                showHideElement('holidayHomeQuestions', situation === 'owner_holiday_short');
+                showHideElement('mainHomeRoomQuestions', situation === 'owner_main_home_room');
+                // Show ownership-related sections unless subletting or other
+                const isOwner = (situation !== 'subletting' && situation !== 'other');
+                showHideElement('ownershipRelatedSection', isOwner);
+                 // Show note for subletting
+                showHideElement('acquisition_note', situation === 'subletting');
+
+                 // Reset conditional sub-questions if parent changes
+                if (situation !== 'owner_holiday_short') {
+                    document.getElementById('holiday_mixed_use').checked = false;
+                    document.getElementById('short_stay_gst').checked = false;
+                }
+                 if (situation !== 'owner_main_home_room') {
+                    if(providesBoardingCheckbox) providesBoardingCheckbox.checked = false;
+                    showHideElement('boarding_note', false);
+                 }
+                 if (!isOwner) {
+                     // Reset owner-specific questions if not owner
+                     document.querySelectorAll('input[name="hasLoan"]').forEach(r => r.checked = false);
+                     document.querySelectorAll('input[name="claimDepreciation"]').forEach(r => r.checked = false);
+                     document.querySelectorAll('input[name="ownership"]').forEach(r => r.checked = false);
+                     showHideElement('interestQuestions', false); // Hide interest section
+                 } else {
+                     // Ensure 'Not Applicable' is unchecked if owner situation selected
+                     document.querySelector('input[name="claimDepreciation"][value="not_applicable"]').checked = false;
+                     document.querySelector('input[name="ownership"][value="not_applicable"]').checked = false;
+                 }
+            });
+        });
+
+         hasLoanRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                showHideElement('interestQuestions', this.value === 'yes');
+                if (this.value === 'no') {
+                     // Reset interest checkboxes if no loan
+                     document.getElementById('interest_new_build').checked = false;
+                     document.getElementById('interest_social_housing').checked = false;
+                     document.getElementById('interest_other_exempt').checked = false;
+                }
+            });
+        });
+
+        if (providesBoardingCheckbox) {
+            providesBoardingCheckbox.addEventListener('change', function() {
+                showHideElement('boarding_note', this.checked);
+            });
+        }
+
+
+        // --- Generate Summary Logic ---
+        const generateSummaryBtn = document.getElementById('generateSummaryBtn');
+        const summaryResultDiv = document.getElementById('summaryResult');
+        const summaryContentDiv = document.getElementById('summaryContent');
+        const form = document.getElementById('rentalForm');
+
+        generateSummaryBtn.addEventListener('click', () => {
+            // Basic validation check
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            let summary = [];
+            const rentalSituation = getValue('rentalSituation');
+            // Removed acquisitionDate variable as it's no longer used for interest %
+            const hasLoan = getValue('hasLoan');
+            const claimDepreciation = getValue('claimDepreciation');
+            const rentalLoss = getValue('rentalLoss');
+            const ownership = getValue('ownership');
+            // Removed brightlineSale variable
+            const expenses = getCheckedValues('expenses');
+            const isOwner = (rentalSituation !== 'subletting' && rentalSituation !== 'other');
+
+            // --- Income ---
+            summary.push("<strong>Income:</strong>");
+            switch (rentalSituation) {
+                case 'owner_residential_long':
+                case 'owner_holiday_short':
+                    summary.push("- Owner: Declare all rent received as taxable income.");
+                    summary.push("- Rent arrears recovered from bond is income.");
+                    summary.push("- Rent paid in advance is taxed in the year received.");
+                    break;
+                case 'owner_main_home_room':
+                     const providesBoarding = isChecked('provides_boarding_services');
+                     if (providesBoarding) {
+                         summary.push("- Boarder Income: Payments received from boarders (providing services like meals) are taxable.");
+                         summary.push("- Standard Cost Method: IRD provides standard costs you can deduct per boarder (up to a limit, e.g., 4 boarders). If using standard costs, you generally don't claim actual specific expenses like food or power apportionment for the boarder. Check current IRD rates and rules.");
+                         summary.push("- Actual Costs: If not using standard costs, you must apportion actual expenses (food, power, rent/mortgage interest/rates portion) related to the boarder.");
+                     } else {
+                         summary.push("- Flatmate Income: Payments received from flatmates (rent only, no services) are generally taxable.");
+                         summary.push("- Apportionment is key: You need to calculate the portion of your household expenses (rent/mortgage interest/rates, power etc.) that relates to the flatmate's use of the home (see QB 23/08).");
+                     }
+                     break;
+                case 'subletting':
+                    summary.push("- Subletting Profit: The difference between the rent you receive from your sub-tenants and the rent you pay to your landlord is taxable income.");
+                    summary.push("- Declare this profit in your tax return.");
+                    break;
+                case 'other':
+                    summary.push("- Income rules depend on the specific property type (e.g., farming, commercial). Refer to relevant IRD guidance.");
+                    break;
+            }
+
+             // --- Expenses ---
+            summary.push("<strong class='mt-2 block'>Expenses:</strong>");
+            summary.push("- Keep detailed records (invoices, receipts, bank statements) for ALL expenses related to the rental activity for at least 7 years.");
+             if (expenses.length > 0) {
+                 summary.push("- You can generally claim deductions for costs directly related to earning the rental income, such as:");
+                 let expenseList = [];
+                  // Common expenses for most types
+                 if (expenses.includes('agent_fees')) expenseList.push("Agent Fees (finding tenants/sub-tenants)");
+                 if (expenses.includes('utilities') && rentalSituation !== 'owner_main_home_room') expenseList.push("Utilities (if you pay and it relates to the rented area/period)"); // Handle main home separately
+                 if (expenses.includes('legal_accounting')) expenseList.push("Accounting Fees & specific Legal Fees (e.g., tenancy agreements, recovering rent)");
+                  if (expenses.includes('travel')) expenseList.push("Travel Costs (if solely for rental activity, requires logbook/records, apportionment if mixed purpose)");
+
+                 // Owner specific expenses
+                 if (isOwner) {
+                     if (expenses.includes('rates_insurance')) expenseList.push("Rates & Insurance (Owner)");
+                     if (expenses.includes('repairs_maintenance')) expenseList.push("Repairs & Maintenance (Owner - distinguish from capital improvements)");
+                     if (expenses.includes('healthy_homes')) expenseList.push("Healthy Homes Costs (Owner - deductibility depends if repair or capital improvement - see QB 20/01)");
+                 }
+                 // Subletter specific expenses
+                 if (rentalSituation === 'subletting') {
+                     if (expenses.includes('rent_paid')) expenseList.push("Rent Paid to your landlord (the primary expense)");
+                     if (expenses.includes('repairs_maintenance')) expenseList.push("Repairs & Maintenance (if your responsibility under sublet agreement)");
+                 }
+                  // Boarding specific expenses
+                 if (rentalSituation === 'owner_main_home_room' && isChecked('provides_boarding_services')) {
+                     if (expenses.includes('food_services')) expenseList.push("Food/Services provided (Claimable ONLY if NOT using standard cost method)");
+                     // Note: Apportionment of household costs handled under Income section logic
+                 }
+                  // Flatmate specific expenses (Apportionment handled under income logic)
+                 if (rentalSituation === 'owner_main_home_room' && !isChecked('provides_boarding_services')) {
+                     // Apportionment of household costs handled under Income section logic
+                     expenseList.push("Apportioned Household Costs (Rent/Interest/Rates, Power etc. - see QB 23/08)");
+                 }
+
+
+                 if (expenseList.length > 0) {
+                    summary.push(`  <ul>${expenseList.map(e => `<li class='ml-4 list-disc'>${e}</li>`).join('')}</ul>`);
+                 } else if (expenses.length > 0) {
+                     summary.push("  (Check applicability of selected expenses to your specific situation).");
+                 }
+            }
+            summary.push("- You CANNOT claim capital expenses (e.g., purchase price, significant improvements) or private expenses.");
+            summary.push("- Apportionment: If property/area isn't used 100% for income generation (e.g., private use of holiday home, flatmate in main home, vacant periods), relevant expenses must be apportioned. Only claim the income-related portion.");
+
+            // --- Interest Deductibility (Owner only) ---
+             if (isOwner && hasLoan === 'yes') {
+                summary.push("<strong class='mt-2 block'>Interest Expenses (Owner):</strong>");
+                const isNewBuild = isChecked('interest_new_build');
+                const isSocialHousing = isChecked('interest_social_housing');
+                const isOtherExempt = isChecked('interest_other_exempt');
+
+                if (rentalSituation === 'owner_main_home_room') {
+                     summary.push("- Main Home: Interest limitation rules generally don't apply to your main home, BUT you can only deduct the portion of interest relating to the income-earning use (e.g., the flatmate's/boarder's share of the house). Careful apportionment is required.");
+                } else if (isNewBuild || isSocialHousing || isOtherExempt) {
+                     summary.push("- Exemption Applies: Your property appears to qualify for an exemption (New Build, Social Housing, etc.). If so, interest is generally 100% deductible (subject to apportionment for private use if applicable). Verify eligibility criteria.");
+                } else {
+                    // Logic simplified: No need to check acquisition date for %
+                    summary.push("- Standard Rules Apply: For the 2024-25 tax year (ending 31 Mar 2025), you can claim 80% of your interest cost. From 1 April 2025 onwards, you can claim 100%. (Apportionment rules still apply if there's any private use).");
+                 }
+                 summary.push("- Keep clear records tracing loan funds. Apportion accurately if loan covers private use.");
+            } else if (rentalSituation === 'subletting') {
+                 summary.push("<strong class='mt-2 block'>Interest Expenses (Subletting):</strong>");
+                 summary.push("- As a subletter, you generally cannot claim deductions for the property owner's mortgage interest.");
+            }
+
+            // --- Depreciation (Owner only) ---
+             if (isOwner) {
+                 summary.push("<strong class='mt-2 block'>Depreciation (Owner):</strong>");
+                 if (claimDepreciation === 'yes') {
+                     summary.push("- Claim depreciation on chattels (furniture, appliances etc.) you own. Buildings generally 0%.");
+                     summary.push("- Maintain asset register, calculate yearly, track values.");
+                     summary.push("- Low-value assets (<$1,000) often expensed immediately.");
+                     summary.push("- Beware depreciation recovery on sale (taxable income if sold above adjusted tax value).");
+                 } else if (claimDepreciation === 'no') {
+                     summary.push("- Consider formally electing not to depreciate assets in your tax return to potentially avoid recovery tax on sale.");
+                 }
+             } else if (rentalSituation === 'subletting') {
+                 summary.push("<strong class='mt-2 block'>Depreciation (Subletting):</strong>");
+                 summary.push("- As a subletter, you generally cannot claim depreciation on the building or chattels owned by the landlord. You could potentially claim depreciation on assets YOU buy and use for the subletting activity.");
+             }
+
+
+             // --- Rental Losses (Ring-fencing) ---
+            summary.push("<strong class='mt-2 block'>Rental Losses (Ring-fencing):</strong>");
+            if (rentalLoss === 'yes') {
+                 // Ring-fencing applies to residential property income, which can include subletting profits or flatmate/boarder income.
+                 summary.push("- Ring-fencing rules likely apply to losses from renting residential property (including subletting, flatmates, boarders unless specific exclusions apply like main home portion for owner).");
+                 summary.push("- This means you generally CANNOT offset this rental loss against your other non-residential-property income (like salary) in the current year.");
+                 summary.push("- Excess deductions (the loss amount) must be carried forward to offset future net income from residential property activities.");
+                 summary.push("- Use IR1226 worksheet if applicable (primarily for owners, but principle applies).");
+            } else {
+                summary.push("- Your rental activity is profitable or breaks even. Ring-fencing rules won't limit your deductions this year (though other rules like interest limitation for owners still apply).");
+            }
+
+             // --- GST (Goods and Services Tax) ---
+             summary.push("<strong class='mt-2 block'>GST:</strong>");
+             if (rentalSituation === 'owner_residential_long' || rentalSituation === 'subletting' || rentalSituation === 'owner_main_home_room') {
+                 summary.push("- Long-term residential rent (owner or subletter) and flatmate/boarder income (in main home) is generally exempt from GST. Don't charge GST, can't claim GST on expenses (claim expenses GST-inclusive for income tax).");
+             } else if (rentalSituation === 'owner_holiday_short') {
+                 const gstRisk = isChecked('short_stay_gst');
+                 summary.push("- Short-stay accommodation IS subject to GST rules.");
+                 if (gstRisk) {
+                     summary.push("- If total taxable income >$60k/year, you likely NEED to register for and charge GST. Rules depend on using marketplaces. See ird.govt.nz/short-stay-rental-gst.");
+                 } else {
+                     summary.push("- If total taxable income <$60k/year, GST registration usually optional. Monitor turnover.");
+                 }
+             } else { // Other
+                 summary.push("- GST implications depend on the specific property type and use (e.g., Commercial property usually standard-rated).");
+             }
+
+             // --- Filing Requirements ---
+             summary.push("<strong class='mt-2 block'>Filing Requirements:</strong>");
+             summary.push("- File an income tax return (usually IR3 for individuals) each year declaring rental income/profit and expenses.");
+             if (isOwner) {
+                 if (ownership === 'sole' || ownership === 'joint') summary.push("- Owners: Use IR3. Joint owners report their share individually.");
+                 else if (ownership === 'partnership') summary.push("- Partnership: File IR7, partners report share in their IR3.");
+                 else if (ownership === 'trust') summary.push("- Trust: File IR6.");
+                 else if (ownership === 'company') summary.push("- Company: File IR4 (LTCs have flow-through).");
+                 summary.push("- Owners: Use Rental Income Schedule (IR3R) and potentially IR1226 (for losses).");
+             } else if (rentalSituation === 'subletting') {
+                 summary.push("- Subletters: Report net profit (income less expenses like rent paid) as 'Other Income' in your IR3 return.");
+             }
+             summary.push("- Provisional Tax: May be required if end-of-year tax to pay exceeds $5,000.");
+
+             // --- Property Sale (Bright-Line - Owner only) --- REMOVED
+             // No longer generating this section
+
+             // --- Holiday Home Specifics ---
+             if (rentalSituation === 'owner_holiday_short') {
+                 summary.push("<strong class='mt-2 block'>Holiday Home / Short-Stay Specifics:</strong>");
+                 const mixedUse = isChecked('holiday_mixed_use');
+                 if (mixedUse) {
+                     summary.push("- Mixed-Use Asset rules likely apply: Apportion expenses based on income-earning vs private days (see Part 5, IR264 formula).");
+                     summary.push("- Low Income (<2% value): Losses may be 'quarantined'.");
+                     summary.push("- Very Low Income (<$4k): May opt-out (no income/expenses reported).");
+                 } else {
+                     summary.push("- Standard rules apply if vacant <62 days or no private use: Apportion based on nights available/rented vs total nights used/available (p.63, IR264).");
+                 }
+             }
+
+
+            // Display summary
+            summaryContentDiv.innerHTML = summary.join('<br>');
+            summaryResultDiv.classList.remove('hidden');
+            // Scroll to summary
+            summaryResultDiv.scrollIntoView({ behavior: 'smooth' });
+        });
+
+    </script>
+
+</body>
+</html>
